@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
+  Button,
+  FlatList,
   Image,
   StyleSheet,
   Text,
@@ -8,12 +10,52 @@ import {
   View
 } from 'react-native'
 import PokemonModal from './components/PokemonModal'
+import { deletePokemon, getPokemons } from './Fire'
 
 export default function App () {
   const [isModalVisible, setIsModalVisible] = useState(false)
+  const [pokemons, setPokemons] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [selectedPokemon, setSelectedPokemon] = useState(null)
+
+  console.log(pokemons)
+
+  useEffect(() => {
+    /* fetch('https://pokeapi.co/api/v2/pokemon?limit=151&offset=0').then(
+      response => {
+        response.json().then(result => {
+          setPokemons(result.results)
+          setLoading(false)
+        })
+      }
+    ) */
+    getPokemons(pokemons => {
+      setPokemons(pokemons)
+      setLoading(false)
+    })
+  }, [])
 
   function handlePress () {
     setIsModalVisible(!isModalVisible)
+  }
+
+  function editPokemon (pokemon) {
+    handlePress()
+    setSelectedPokemon(pokemon)
+  }
+
+  function renderPokemon (pokemon) {
+    return (
+      <View>
+        <Image
+          source={{ uri: pokemon.image }}
+          style={{ width: 120, height: 120 }}
+        />
+        <Text>{pokemon.name}</Text>
+        <Button title='Modifier' onPress={() => editPokemon(pokemon)} />
+        <Button title='Supprimer' onPress={() => deletePokemon(pokemon)} />
+      </View>
+    )
   }
 
   return (
@@ -22,9 +64,23 @@ export default function App () {
       <Text style={styles.title}>Pokédex</Text>
       <TouchableOpacity onPress={handlePress}>
         <Text>Ajouter un Pokémon</Text>
-        <ActivityIndicator size='large' color='#00ff00' />
+        {loading ? (
+          <ActivityIndicator size='large' color='#00ff00' />
+        ) : (
+          <FlatList
+            data={pokemons}
+            keyExtractor={item => item.name}
+            renderItem={({ item }) => renderPokemon(item)}
+          />
+        )}
       </TouchableOpacity>
-      <PokemonModal isVisible={isModalVisible} onClose={handlePress} />
+      {isModalVisible && (
+        <PokemonModal
+          selectedPokemon={selectedPokemon}
+          isVisible={isModalVisible}
+          onClose={handlePress}
+        />
+      )}
     </View>
   )
 }
